@@ -1,0 +1,47 @@
+{
+  "name": "then-now-studio",
+  "productName": "Then & Now Studio",
+  "version": "0.1.0",
+  "private": true,
+  "description": "Desktop editor for seamless Instagram carousel posts: then / story / now.",
+  "type": "module",
+  "main": "dist-electron/main.js",
+  "scripts": {
+    "dev": "vite",
+    "build": "tsc --noEmit && vite build",
+    "typecheck": "tsc --noEmit",
+    "dist": "npm run build && electron-builder --mac"
+  },
+  "dependencies": {
+    "html-to-image": "^1.11.13",
+    "idb-keyval": "^6.2.1",
+    "react": "^19.1.0",
+    "react-dom": "^19.1.0",
+    "zustand": "^5.0.5"
+  },
+  "devDependencies": {
+    "@tailwindcss/vite": "^4.1.8",
+    "@types/node": "^22.20.5",
+    "@types/react": "^19.1.6",
+    "@types/react-dom": "^19.1.5",
+    "@vitejs/plugin-react": "^4.5.0",
+    "electron": "^36.3.2",
+    "electron-builder": "^26.0.12",
+    "tailwindcss": "^4.1.8",
+    "typescript": "^5.8.3",
+    "vite": "^6.3.5",
+    "vite-plugin-electron": "^0.29.0"
+  },
+  "build": {
+    "appId": "no.thennow.studio",
+    "productName": "Then & Now Studio",
+    "files": [
+      "dist/**",
+      "dist-electron/**"
+    ],
+    "mac": {
+      "target": "dmg",
+      "category": "public.app-category.graphics-design"
+    }
+  }
+}
