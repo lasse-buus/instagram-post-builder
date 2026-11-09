@@ -151,6 +151,11 @@ export function StripEditor() {
                   )}
                 </div>
               ))}
+              {guides && post.aspect === '1:1' && (
+                <div className="absolute inset-0 overflow-hidden" title="Instagram crops the profile photo to this circle">
+                  <div className="absolute inset-0 rounded-full border-2 border-dashed border-white/80" style={{ boxShadow: '0 0 0 9999px rgba(0,0,0,0.35)' }} />
+                </div>
+              )}
               {guides && gridCrop > 0 && (
                 <>
                   <div className="absolute top-0 bottom-0 bg-amber-400/25" style={{ left: 0, width: gridCrop * scale }} title="Cropped on profile grid" />

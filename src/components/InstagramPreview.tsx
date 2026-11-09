@@ -1,7 +1,7 @@
 import { useRef, useState } from 'react'
 import { useStore } from '../store'
-import { SLIDE_W, slideHeight } from '../types'
-import { Stage } from './Stage'
+import { type Post, SLIDE_W, slideHeight } from '../types'
+import { Avatar, Stage } from './Stage'
 
 const VIEW_W = 360
 
@@ -11,8 +11,11 @@ const Icon = ({ d }: { d: string }) => (
   </svg>
 )
 
-/** A feed-post mock: swipe through the slices exactly as they will be cut. */
-export function InstagramPreview() {
+/**
+ * A feed-post mock: swipe through the slices exactly as they will be cut.
+ * `avatar` is the account profile photo, shown next to the handle.
+ */
+export function InstagramPreview({ avatar }: { avatar?: Post | null }) {
   const { post, setPost } = useStore()
   const H = slideHeight(post.aspect)
   const s = VIEW_W / SLIDE_W
@@ -31,7 +34,7 @@ export function InstagramPreview() {
       <div className="mx-auto w-[360px] overflow-hidden rounded-xl border border-zinc-200 bg-white text-[13px] text-zinc-900 shadow-sm">
         <div className="flex items-center gap-2.5 px-3 py-2.5">
           <div className="h-8 w-8 rounded-full bg-gradient-to-tr from-amber-400 via-pink-500 to-violet-600 p-[2px]">
-            <div className="h-full w-full rounded-full border-2 border-white bg-zinc-200" />
+            <div className="h-full w-full overflow-hidden rounded-full border-2 border-white bg-zinc-200">{avatar && <Avatar post={avatar} size={24} />}</div>
           </div>
           <span className="font-semibold">{post.account}</span>
           <span className="ml-auto text-lg leading-none text-zinc-500">···</span>
@@ -110,6 +113,41 @@ export function InstagramPreview() {
             onChange={(e) => setPost({ caption: e.target.value })}
             placeholder="Then and now… #classof2007"
           />
+        </label>
+      </div>
+    </aside>
+  )
+}
+
+/** Profile-page mock: the photo at the sizes Instagram shows it, plus the handle. */
+export function ProfilePreview() {
+  const { post, setPost } = useStore()
+  return (
+    <aside className="flex h-full w-[420px] shrink-0 flex-col overflow-y-auto border-l border-zinc-200 bg-zinc-50">
+      <div className="px-4 py-2 text-xs font-medium text-zinc-700">Instagram preview</div>
+      <div className="mx-auto w-[360px] rounded-xl border border-zinc-200 bg-white p-4 text-[13px] text-zinc-900 shadow-sm">
+        <div className="flex items-center gap-6">
+          <Avatar post={post} size={86} />
+          <div className="flex flex-1 justify-around text-center">
+            {[['24', 'posts'], ['312', 'followers'], ['180', 'following']].map(([n, l]) => (
+              <div key={l}>
+                <div className="font-semibold">{n}</div>
+                <div className="text-zinc-500">{l}</div>
+              </div>
+            ))}
+          </div>
+        </div>
+        <p className="mt-3 font-semibold">{post.account}</p>
+        <div className="mt-4 flex items-center gap-3 border-t border-zinc-100 pt-3 text-zinc-500">
+          <Avatar post={post} size={32} />
+          <span className="font-semibold text-zinc-900">{post.account}</span>
+          <span className="ml-auto text-[11px]">feed size</span>
+        </div>
+      </div>
+      <div className="space-y-3 px-4 py-4">
+        <label className="block">
+          <span className="mb-1 block text-[11px] font-medium uppercase tracking-wide text-zinc-500">Account</span>
+          <input className="w-full rounded-md border border-zinc-300 bg-white px-2 py-1 text-sm" value={post.account} onChange={(e) => setPost({ account: e.target.value })} />
         </label>
       </div>
     </aside>

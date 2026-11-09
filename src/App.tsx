@@ -1,14 +1,14 @@
 import { useCallback, useEffect, useRef, useState, type CSSProperties } from 'react'
-import { InstagramPreview } from './components/InstagramPreview'
+import { InstagramPreview, ProfilePreview } from './components/InstagramPreview'
 import { Inspector } from './components/Inspector'
 import { Library } from './components/Library'
 import { Stage } from './components/Stage'
 import { StripEditor } from './components/StripEditor'
 import { renderSlices } from './lib/export'
 import { bridge, saveProject, saveSlices } from './lib/files'
-import { migrateLegacyAutosave, readTemplate, writePost, writeTemplate } from './lib/library'
+import { migrateLegacyAutosave, readProfile, readTemplate, writePost, writeProfile, writeTemplate } from './lib/library'
 import { useStore } from './store'
-import { createDefaultPost, postFromTemplate } from './template'
+import { createDefaultPost, createProfile, postFromTemplate } from './template'
 import type { Post } from './types'
 
 export default function App() {
@@ -17,10 +17,12 @@ export default function App() {
   const exportRef = useRef<HTMLDivElement>(null)
   const [busy, setBusy] = useState(false)
   const [toast, setToast] = useState<string | null>(null)
-  /** null until the old single-post autosave has been moved into the library. */
-  const [view, setView] = useState<'library' | 'editor' | null>(null)
-  /** The post as last written to (or read from) the library — anything else is unsaved. */
+  /** null until the old single-post autosave has been moved into the library. 'person' / 'profile' are the editor. */
+  const [view, setView] = useState<'library' | 'person' | 'profile' | null>(null)
+  /** The post as last written to (or read from) storage — anything else is unsaved. */
   const saved = useRef<Post | null>(null)
+  /** The account profile photo design, once made. */
+  const [profile, setProfile] = useState<Post | null>(null)
 
   const flash = useCallback((msg: string) => {
     setToast(msg)
@@ -31,13 +33,19 @@ export default function App() {
     migrateLegacyAutosave()
       .catch((e) => flash(`Couldn't move the previous autosave into the library: ${(e as Error).message}`))
       .finally(() => setView('library'))
+    readProfile()
+      .then(setProfile)
+      .catch((e) => flash(`Couldn't read the account profile: ${(e as Error).message}`))
   }, [flash])
 
   const persist = useCallback(
-    async (p: Post) => {
+    async (p: Post, kind: 'person' | 'profile') => {
       saved.current = p
       try {
-        await writePost(p)
+        if (kind === 'profile') {
+          await writeProfile(p)
+          setProfile(p)
+        } else await writePost(p)
       } catch (e) {
         flash(`Autosave failed: ${(e as Error).message}`)
       }
@@ -45,17 +53,24 @@ export default function App() {
     [flash],
   )
 
-  // Autosave edits into the library (debounced). Skips the post exactly as it was opened.
+  // Autosave edits (debounced) to wherever the open post lives. Skips the post exactly as it was opened.
   useEffect(() => {
-    if (view !== 'editor' || post === saved.current) return
-    const t = setTimeout(() => persist(post), 500)
+    if ((view !== 'person' && view !== 'profile') || post === saved.current) return
+    const t = setTimeout(() => persist(post, view), 500)
     return () => clearTimeout(t)
   }, [post, view, persist])
 
-  const openPost = (p: Post) => {
+  const openPost = (p: Post, kind: 'person' | 'profile' = 'person') => {
     load(p)
     saved.current = useStore.getState().post
-    setView('editor')
+    setView(kind)
+  }
+
+  const openProfile = async () => {
+    if (profile) return openPost(profile, 'profile')
+    const p = createProfile()
+    await persist(p, 'profile')
+    openPost(p, 'profile')
   }
 
   const newPost = async () => {
@@ -65,8 +80,9 @@ export default function App() {
     } catch (e) {
       flash(`Couldn't read your template, using the default: ${(e as Error).message}`)
     }
-    const p = template ? postFromTemplate(template) : createDefaultPost()
-    await persist(p)
+    const base = template ? postFromTemplate(template) : createDefaultPost()
+    const p = profile ? { ...base, account: profile.account } : base
+    await persist(p, 'person')
     openPost(p)
   }
 
@@ -81,13 +97,13 @@ export default function App() {
   }
 
   const backToLibrary = async () => {
-    if (post !== saved.current) await persist(post)
+    if ((view === 'person' || view === 'profile') && post !== saved.current) await persist(post, view)
     setView('library')
   }
 
   const doExport = async () => {
     if (!exportRef.current) return
-    if (!post.consent.given && !confirm(`${post.person} isn't marked as having agreed to be posted. Export anyway?`)) return
+    if (view === 'person' && !post.consent.given && !confirm(`${post.person} isn't marked as having agreed to be posted. Export anyway?`)) return
     setBusy(true)
     try {
       const blobs = await renderSlices(exportRef.current, post)
@@ -108,18 +124,24 @@ export default function App() {
         className="flex h-12 shrink-0 items-center gap-2 border-b border-zinc-200 bg-zinc-50 pr-3"
         style={{ paddingLeft: bridge() ? 84 : 16, WebkitAppRegion: 'drag' } as CSSProperties}
       >
-        {view === 'editor' ? (
+        {view === 'person' || view === 'profile' ? (
           <>
             <button className={btn} style={{ WebkitAppRegion: 'no-drag' } as CSSProperties} onClick={backToLibrary}>← All people</button>
-            <span className="ml-1 text-sm font-semibold">{post.person}</span>
-            <span className={`ml-2 rounded-full px-2 py-0.5 text-[10px] font-semibold uppercase tracking-wide ${post.consent.given ? 'bg-emerald-100 text-emerald-700' : 'bg-amber-100 text-amber-700'}`}>
-              {post.consent.given ? 'Consent ✓' : 'No consent yet'}
-            </span>
+            <span className="ml-1 text-sm font-semibold">{view === 'profile' ? `Profile photo · ${post.account}` : post.person}</span>
+            {view === 'person' && (
+              <span className={`ml-2 rounded-full px-2 py-0.5 text-[10px] font-semibold uppercase tracking-wide ${post.consent.given ? 'bg-emerald-100 text-emerald-700' : 'bg-amber-100 text-amber-700'}`}>
+                {post.consent.given ? 'Consent ✓' : 'No consent yet'}
+              </span>
+            )}
             <div className="ml-auto flex gap-2" style={{ WebkitAppRegion: 'no-drag' } as CSSProperties}>
-              <button className={btn} onClick={saveTemplate}>Save as template</button>
-              <button className={btn} onClick={async () => { const p = await saveProject(post); if (p) flash(`Saved → ${p}`) }}>Save as file…</button>
+              {view === 'person' && (
+                <>
+                  <button className={btn} onClick={saveTemplate}>Save as template</button>
+                  <button className={btn} onClick={async () => { const p = await saveProject(post); if (p) flash(`Saved → ${p}`) }}>Save as file…</button>
+                </>
+              )}
               <button className="rounded-md bg-zinc-900 px-3 py-1 text-xs font-semibold text-white hover:bg-zinc-700 disabled:opacity-50" disabled={busy} onClick={doExport}>
-                {busy ? 'Exporting…' : `Export ${post.slideCount} PNGs`}
+                {busy ? 'Exporting…' : view === 'profile' ? 'Export PNG' : `Export ${post.slideCount} PNGs`}
               </button>
             </div>
           </>
@@ -128,16 +150,16 @@ export default function App() {
         )}
       </header>
 
-      {view === 'library' && <Library onOpen={openPost} onNew={newPost} flash={flash} />}
+      {view === 'library' && <Library onOpen={openPost} onNew={newPost} onOpenProfile={openProfile} profile={profile} flash={flash} />}
 
-      {view === 'editor' && (
+      {(view === 'person' || view === 'profile') && (
         <>
           <div className="flex min-h-0 flex-1">
-            <Inspector />
+            <Inspector profile={view === 'profile'} />
             <main className="min-w-0 flex-1">
               <StripEditor />
             </main>
-            <InstagramPreview />
+            {view === 'profile' ? <ProfilePreview /> : <InstagramPreview avatar={profile} />}
           </div>
 
           {/* Native-size, chrome-free copy of the strip used for export */}

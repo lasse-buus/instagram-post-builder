@@ -56,7 +56,7 @@ src/store.ts            zustand store: all mutations (updateEl, setImage, setSli
 src/App.tsx             top bar, layout, autosave (IndexedDB), export flow, hidden export stage
 src/components/Stage.tsx            renders the strip; element rendering per type
 src/components/StripEditor.tsx      drag / resize / snapping, keyboard shortcuts, seam + safe-zone guides
-src/components/Library.tsx          people overview (start screen): open / new / import / delete
+src/components/Library.tsx          people overview (start screen): account card, open / new / import / delete
 src/components/Inspector.tsx        left panel: add elements, post settings, per-element controls
 src/components/InstagramPreview.tsx feed mock with swipe, dots, caption + account fields
 src/lib/export.ts       renderSlices(): strip → PNG blobs
@@ -76,7 +76,7 @@ src/lib/files.ts        save/open/export through window.studio, with browser dow
 
 - Background images must come **first** in `elements` or they cover lines/shapes that cross into that slide (this bit the timeline once). `addPhotoBackground()` prepends for this reason.
 - Selection chrome sizes are divided by the editor scale (`px = 1/scale` in `Stage`) so they stay a constant on-screen size.
-- Autosave writes the whole post into the library on every change (debounced 500 ms, plus a flush on "← All people"). Files live in `people/<post id>.json` in the project folder during development (git-ignored — real classmates' photos) and in the app's user-data folder when packaged. Deleting moves the file to the Trash. **Person template:** "Save as template" writes `person-template.json` beside `people/` (photos, name, consent, status stripped by `templateFrom()`); "New person" starts from it, else `createDefaultPost()`. The old single-post IndexedDB autosave (`then-now:current`) is migrated into the library on launch.
+- Autosave writes the whole post into the library on every change (debounced 500 ms, plus a flush on "← All people"). Files live in `people/<post id>.json` in the project folder during development (git-ignored — real classmates' photos) and in the app's user-data folder when packaged. Deleting moves the file to the Trash. **Person template:** "Save as template" writes `person-template.json` beside `people/` (photos, name, consent, status stripped by `templateFrom()`); "New person" starts from it, else `createDefaultPost()`. **Account profile photo:** a 1:1, one-slide `Post` (`createProfile()`) edited in the same editor (view `profile`), autosaved to `account.json` beside `people/` (git-ignored — may hold a photo); shown via `Avatar` in the library and the feed preview. Both single files go through the `doc-read/write/delete` IPC with a name allow-list. Text elements support `effect` (`cutout` | `tiles`) and `arc`, rendered per letter in `Letters` (Stage.tsx). The old single-post IndexedDB autosave (`then-now:current`) is migrated into the library on launch.
 - `setSlideCount()` drops elements whose `x` starts beyond the new strip width — no undo exists yet, so this is destructive.
 - Empty photo slots show "Drop the photo here" only in the editor (`interactive`); in the preview and export they are plain grey.
 

@@ -102,26 +102,31 @@ ipcMain.handle('library-write', async (_e, id: string, json: string) => {
 // Deleting moves the file to the Trash so it can be recovered.
 ipcMain.handle('library-delete', (_e, id: string) => shell.trashItem(postFile(id)))
 
-// Person template: the layout new people start from. Holds no photos, so it sits beside people/.
-const templateFile = () => path.join(path.dirname(libraryDir()), 'person-template.json')
+// Single-file documents kept beside people/: the person template (layout only, no photos) and the
+// account profile (may hold an uploaded photo, so account.json is git-ignored).
+const DOCS = ['person-template', 'account'] as const
+function docFile(name: string) {
+  if (!(DOCS as readonly string[]).includes(name)) throw new Error(`Unknown document: ${name}`)
+  return path.join(path.dirname(libraryDir()), `${name}.json`)
+}
 
-ipcMain.handle('template-read', async () => {
+ipcMain.handle('doc-read', async (_e, name: string) => {
   try {
-    return await readFile(templateFile(), 'utf8')
+    return await readFile(docFile(name), 'utf8')
   } catch (e) {
     if ((e as NodeJS.ErrnoException).code === 'ENOENT') return null
     throw e
   }
 })
 
-ipcMain.handle('template-write', async (_e, json: string) => {
-  const file = templateFile()
+ipcMain.handle('doc-write', async (_e, name: string, json: string) => {
+  const file = docFile(name)
   await mkdir(path.dirname(file), { recursive: true })
   await writeFile(`${file}.tmp`, json, 'utf8')
   await rename(`${file}.tmp`, file)
 })
 
-ipcMain.handle('template-delete', () => rm(templateFile(), { force: true }))
+ipcMain.handle('doc-delete', (_e, name: string) => rm(docFile(name), { force: true }))
 
 app.whenReady().then(createWindow)
 app.on('window-all-closed', () => {

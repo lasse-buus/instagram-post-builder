@@ -9,9 +9,10 @@ interface StudioBridge {
   libraryRead: (id: string) => Promise<string>
   libraryWrite: (id: string, json: string) => Promise<void>
   libraryDelete: (id: string) => Promise<void>
-  templateRead: () => Promise<string | null>
-  templateWrite: (json: string) => Promise<void>
-  templateDelete: () => Promise<void>
+  /** Single-file documents beside the library: 'person-template' | 'account'. */
+  docRead: (name: string) => Promise<string | null>
+  docWrite: (name: string, json: string) => Promise<void>
+  docDelete: (name: string) => Promise<void>
 }
 
 export function parsePost(json: string): Post {

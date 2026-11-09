@@ -46,28 +46,34 @@ export async function deletePost(id: string): Promise<void> {
   else await del(PREFIX + id)
 }
 
-const TEMPLATE_KEY = 'then-now:template'
+/** Posts stored as a single named file beside the library (IndexedDB key in the browser build). */
+type DocName = 'person-template' | 'account'
 
-/** The user's saved person template, or null when new people use the built-in default. */
-export async function readTemplate(): Promise<Post | null> {
+async function readDoc(name: DocName): Promise<Post | null> {
   const b = bridge()
-  if (!b) return (await get<Post>(TEMPLATE_KEY)) ?? null
-  const json = await b.templateRead()
+  if (!b) return (await get<Post>(`then-now:${name}`)) ?? null
+  const json = await b.docRead(name)
   return json ? parsePost(json) : null
 }
 
-export async function writeTemplate(post: Post): Promise<void> {
-  const t = templateFrom(post)
+async function writeDoc(name: DocName, post: Post): Promise<void> {
   const b = bridge()
-  if (b) await b.templateWrite(JSON.stringify(t))
-  else await set(TEMPLATE_KEY, t)
+  if (b) await b.docWrite(name, JSON.stringify(post))
+  else await set(`then-now:${name}`, post)
 }
 
+/** The user's saved person template, or null when new people use the built-in default. */
+export const readTemplate = () => readDoc('person-template')
+export const writeTemplate = (post: Post) => writeDoc('person-template', templateFrom(post))
 export async function deleteTemplate(): Promise<void> {
   const b = bridge()
-  if (b) await b.templateDelete()
-  else await del(TEMPLATE_KEY)
+  if (b) await b.docDelete('person-template')
+  else await del('then-now:person-template')
 }
+
+/** The account profile photo design (1:1), or null before it has been made. */
+export const readProfile = () => readDoc('account')
+export const writeProfile = (post: Post) => writeDoc('account', post)
 
 /** Moves the pre-library autosave into the library once, so no work is lost on upgrade. */
 export async function migrateLegacyAutosave(): Promise<void> {

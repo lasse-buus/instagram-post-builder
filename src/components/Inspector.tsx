@@ -42,7 +42,8 @@ function Section({ title, children }: { title: string; children: ReactNode }) {
 
 const btn = 'rounded-md border border-zinc-300 bg-white px-2 py-1 text-xs font-medium text-zinc-700 hover:bg-zinc-50'
 
-export function Inspector() {
+/** `profile`: editing the account profile photo — hides the person-only post settings. */
+export function Inspector({ profile = false }: { profile?: boolean }) {
   const { post, selectedId, addEl } = useStore()
   const el = post.elements.find((e) => e.id === selectedId)
 
@@ -63,7 +64,7 @@ export function Inspector() {
           <button className={`${btn} col-span-2`} onClick={() => addEl(circle(targetSlide, post.aspect, '#ffffff'))}>Circle (behind a photo)</button>
         </div>
       </Section>
-      {el ? <ElementInspector key={el.id} el={el} /> : <PostInspector />}
+      {el ? <ElementInspector key={el.id} el={el} /> : profile ? <ProfileInspector /> : <PostInspector />}
     </aside>
   )
 }
@@ -114,6 +115,18 @@ function PostInspector() {
         />
       </div>
       <p className="text-[11px] leading-relaxed text-zinc-400">Select an element on the strip to edit it.</p>
+    </Section>
+  )
+}
+
+function ProfileInspector() {
+  return (
+    <Section title="Profile photo">
+      <p className="text-[11px] leading-relaxed text-zinc-500">
+        Instagram shows this as a circle — keep everything important inside the dashed ring. Add an Image and drop a photo on it for a photo background.
+      </p>
+      <SlideBackgrounds />
+      <p className="text-[11px] leading-relaxed text-zinc-400">Select an element to edit it.</p>
     </Section>
   )
 }
@@ -279,6 +292,16 @@ function ElementInspector({ el }: { el: El }) {
               <Field label="Color">
                 <input type="color" className="h-8 w-full" value={el.color} onChange={(e) => set({ color: e.target.value })} />
               </Field>
+            </div>
+            <div className="grid grid-cols-2 gap-2">
+              <Field label="Letters">
+                <select className={inputCls} value={el.effect ?? 'none'} onChange={(e) => set({ effect: e.target.value === 'none' ? undefined : (e.target.value as 'cutout' | 'tiles') })}>
+                  <option value="none">Plain</option>
+                  <option value="cutout">Cut-out</option>
+                  <option value="tiles">Tiles</option>
+                </select>
+              </Field>
+              <Num label="Arc (°)" value={el.arc ?? 0} onChange={(arc) => set({ arc: Math.max(-120, Math.min(120, arc)) || undefined })} />
             </div>
             <Field label="Chat bubble">
               <select

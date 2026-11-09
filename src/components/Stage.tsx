@@ -135,6 +135,118 @@ function Photo({ src, crop, blur = 0, grayscale, placeholder, interactive }: { s
   )
 }
 
+/** Magazine cut-out looks, cycled per letter so neighbours never match. */
+const CUTOUTS = [
+  { background: '#F7C8D8', color: '#B0174E', font: 'serif', weight: 700, italic: false },
+  { background: '#1d1d1b', color: '#F7E36B', font: 'mono', weight: 700, italic: false },
+  { background: '#F7E36B', color: '#D21F5B', font: 'sans', weight: 800, italic: false },
+  { background: '#ffffff', color: '#2B6CB0', font: 'serif', weight: 600, italic: true },
+  { background: '#E8590C', color: '#ffffff', font: 'sans', weight: 800, italic: false },
+  { background: '#8FD3C1', color: '#3B2A6B', font: 'serif', weight: 700, italic: false },
+] as const
+const TILTS = [-6, 4, -3, 7, -5, 3, -2]
+/** Letter values printed in the corner of each tile. */
+const TILE_POINTS: Record<string, number> = Object.fromEntries(
+  Object.entries({ 1: 'AEILNORSTU', 2: 'DG', 3: 'BCMP', 4: 'FHVWY', 5: 'K', 8: 'JX', 10: 'QZ' }).flatMap(([pts, ls]) => [...ls].map((l) => [l, +pts])),
+)
+
+/** Text drawn letter by letter: cut-out or tile styling, optionally bent along an arc. */
+function Letters({ el }: { el: Extract<El, { type: 'text' }> }) {
+  const size = el.fontSize
+  const arc = ((el.arc ?? 0) * Math.PI) / 180
+  // Circle that spans the element's width over the arc angle.
+  const radius = arc ? el.w / 2 / Math.sin(Math.abs(arc) / 2) : 0
+  const justify = el.align === 'left' ? 'flex-start' : el.align === 'right' ? 'flex-end' : 'center'
+
+  return (
+    <div style={{ position: 'absolute', inset: 0, display: 'flex', flexDirection: 'column', gap: size * 0.25, lineHeight: 1 }}>
+      {el.content.split('\n').map((line, row) => {
+        const chars = [...line]
+        return (
+          <div key={row} style={{ display: 'flex', justifyContent: justify, alignItems: 'center', gap: el.effect === 'tiles' ? size * 0.16 : size * 0.04 }}>
+            {chars.map((ch, i) => {
+              const a = arc * ((i + 0.5) / chars.length - 0.5)
+              const bend = arc ? `translateY(${Math.sign(arc) * radius * (1 - Math.cos(a))}px) rotate(${(a * 180) / Math.PI}deg)` : ''
+              if (ch === ' ') return <span key={i} style={{ width: size * 0.35, flexShrink: 0 }} />
+
+              if (el.effect === 'tiles') {
+                const pts = TILE_POINTS[ch.toUpperCase()]
+                return (
+                  <span
+                    key={i}
+                    style={{
+                      position: 'relative',
+                      display: 'inline-flex',
+                      alignItems: 'center',
+                      justifyContent: 'center',
+                      flexShrink: 0,
+                      width: size * 1.15,
+                      height: size * 1.2,
+                      background: 'linear-gradient(160deg, #F1DEB5, #DDBF8A)',
+                      borderRadius: size * 0.08,
+                      boxShadow: `0 ${size * 0.05}px ${size * 0.1}px rgba(0,0,0,0.35), inset 0 -${size * 0.04}px 0 rgba(0,0,0,0.12)`,
+                      fontFamily: FONTS.sans,
+                      fontSize: size * 0.82,
+                      fontWeight: 500,
+                      color: '#1c1917',
+                      transform: bend || undefined,
+                    }}
+                  >
+                    {ch.toUpperCase()}
+                    {pts && <span style={{ position: 'absolute', right: size * 0.1, bottom: size * 0.08, fontSize: size * 0.24 }}>{pts}</span>}
+                  </span>
+                )
+              }
+
+              if (el.effect === 'cutout') {
+                const look = CUTOUTS[(i * 4 + ch.charCodeAt(0)) % CUTOUTS.length]
+                const tilt = TILTS[(i + row * 3) % TILTS.length]
+                return (
+                  <span
+                    key={i}
+                    style={{
+                      display: 'inline-block',
+                      flexShrink: 0,
+                      padding: `${size * 0.06}px ${size * 0.1}px`,
+                      background: look.background,
+                      color: look.color,
+                      fontFamily: FONTS[look.font],
+                      fontWeight: look.weight,
+                      fontStyle: look.italic ? 'italic' : undefined,
+                      fontSize: size * (i % 3 === 1 ? 1.08 : 0.95),
+                      boxShadow: '0 4px 10px rgba(0,0,0,0.3)',
+                      transform: `${bend} rotate(${tilt}deg)`,
+                    }}
+                  >
+                    {i % 2 ? ch.toLowerCase() : ch.toUpperCase()}
+                  </span>
+                )
+              }
+
+              return (
+                <span key={i} style={{ display: 'inline-block', fontFamily: FONTS[el.font], fontSize: size, fontWeight: el.weight, color: el.color, transform: bend || undefined }}>
+                  {ch}
+                </span>
+              )
+            })}
+          </div>
+        )
+      })}
+    </div>
+  )
+}
+
+/** The account profile photo as a circle, the way Instagram crops it. */
+export function Avatar({ post, size }: { post: Post; size: number }) {
+  return (
+    <div className="shrink-0 overflow-hidden rounded-full" style={{ width: size, height: size }}>
+      <div style={{ transform: `scale(${size / SLIDE_W})`, transformOrigin: '0 0', width: SLIDE_W, height: SLIDE_W }}>
+        <Stage post={post} />
+      </div>
+    </div>
+  )
+}
+
 function ElementContent({ el, interactive }: { el: El; interactive?: boolean }) {
   switch (el.type) {
     case 'polaroid': {
@@ -193,6 +305,7 @@ function ElementContent({ el, interactive }: { el: El; interactive?: boolean }) 
           </div>
         )
       }
+      if (el.effect || el.arc) return <Letters el={el} />
       return <div style={{ position: 'absolute', inset: 0, ...font }}>{el.content}</div>
     }
     case 'rect':

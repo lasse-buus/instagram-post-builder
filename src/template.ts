@@ -76,6 +76,43 @@ export function createDefaultPost(aspect: Aspect = '3:4'): Post {
 }
 
 /**
+ * Default account profile photo (1080×1080, shown as a circle): a green school locker drawn
+ * with shapes, the name in cut-out letters and tiles, the year in serif.
+ */
+export function createProfile(account = 'ourschool.20years'): Post {
+  const W = SLIDE_W
+  const rect = (x: number, y: number, w: number, h: number, color: string, radius = 0): El => ({ id: uid(), type: 'rect', x, y, w, h, rotation: 0, color, radius })
+  const vents = (y0: number) => Array.from({ length: 5 }, (_, i) => rect(380, y0 + i * 44, 320, 24, '#3F8A64', 8))
+  return {
+    version: 1,
+    id: 'profile',
+    person: 'Profile photo',
+    account,
+    aspect: '1:1',
+    slideCount: 1,
+    background: '#2E6B4E',
+    slideBackgrounds: ['#2E6B4E'],
+    elements: [
+      // Locker: door seams, name plate, vents, handles
+      rect(150, 0, 10, W, '#1F4A36'),
+      rect(920, 0, 10, W, '#1F4A36'),
+      rect(490, 50, 100, 34, '#EDE7DA', 6),
+      ...vents(110),
+      ...vents(810),
+      rect(205, 650, 34, 140, '#C9A1A6', 10),
+      rect(841, 650, 34, 140, '#C9A1A6', 10),
+      // Name
+      text({ x: 170, y: 290, w: 740, h: 150, content: 'Camargo', fontSize: 112, align: 'center', effect: 'cutout', arc: 40 }),
+      text({ x: 140, y: 505, w: 800, h: 140, content: 'Aranha', fontSize: 96, align: 'center', effect: 'tiles' }),
+      text({ x: 240, y: 650, w: 600, h: 140, content: '2007\n20 years', fontSize: 56, weight: 600, font: 'serif', align: 'center', color: '#EBD9B4', lineHeight: 1.1 }),
+    ],
+    caption: '',
+    consent: { given: true },
+    status: 'draft',
+  }
+}
+
+/**
  * A post reduced to its reusable layout: no photos, name, consent or status.
  * Photos are stripped from every image too, so a template never carries a real person's pictures.
  */

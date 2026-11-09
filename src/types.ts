@@ -1,7 +1,8 @@
-export type Aspect = '3:4' | '4:5'
+/** 1:1 is only used for the account profile photo. */
+export type Aspect = '3:4' | '4:5' | '1:1'
 
 export const SLIDE_W = 1080
-export const slideHeight = (a: Aspect) => (a === '3:4' ? 1440 : 1350)
+export const slideHeight = (a: Aspect) => (a === '3:4' ? 1440 : a === '4:5' ? 1350 : 1080)
 
 /** Focal point (0–100 %) and zoom (1 = cover) for a photo inside its box. */
 export interface Crop {
@@ -38,6 +39,10 @@ export interface TextEl extends Base {
   lineHeight: number
   /** Renders the text as a chat bubble hugging the left (question) or right (answer) edge of its box. */
   bubble?: Bubble
+  /** Per-letter styling: magazine cut-out letters or letter tiles. */
+  effect?: 'cutout' | 'tiles'
+  /** Bends each line along an arc; degrees spanned by the line (+ arches up, − sags down). */
+  arc?: number
 }
 
 export interface Bubble {

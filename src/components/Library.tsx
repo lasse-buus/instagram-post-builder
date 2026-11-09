@@ -2,6 +2,7 @@ import { useEffect, useState } from 'react'
 import { bridge, openProject } from '../lib/files'
 import { deletePost, deleteTemplate, listPosts, readPost, readTemplate, writePost } from '../lib/library'
 import type { Post, PostSummary } from '../types'
+import { Avatar } from './Stage'
 
 const STATUS_STYLE: Record<Post['status'], string> = {
   draft: 'bg-zinc-100 text-zinc-600',
@@ -21,7 +22,19 @@ function Thumb({ src, label }: { src?: string; label: string }) {
 }
 
 /** Overview of every person in the library. Opening, creating and importing hand a post to the editor. */
-export function Library({ onOpen, onNew, flash }: { onOpen: (post: Post) => void; onNew: () => void; flash: (msg: string) => void }) {
+export function Library({
+  onOpen,
+  onNew,
+  onOpenProfile,
+  profile,
+  flash,
+}: {
+  onOpen: (post: Post) => void
+  onNew: () => void
+  onOpenProfile: () => void
+  profile: Post | null
+  flash: (msg: string) => void
+}) {
   const [people, setPeople] = useState<PostSummary[] | null>(null)
 
   const refresh = () =>
@@ -87,6 +100,18 @@ export function Library({ onOpen, onNew, flash }: { onOpen: (post: Post) => void
   return (
     <div className="min-h-0 flex-1 overflow-y-auto bg-zinc-50">
       <div className="mx-auto max-w-6xl px-8 py-8">
+        <button
+          onClick={onOpenProfile}
+          className="mb-8 flex w-full items-center gap-4 rounded-xl border border-zinc-200 bg-white p-4 text-left shadow-sm transition hover:border-zinc-400 hover:shadow-md"
+        >
+          {profile ? <Avatar post={profile} size={64} /> : <div className="h-16 w-16 shrink-0 rounded-full bg-zinc-200" />}
+          <div>
+            <div className="text-[11px] font-medium uppercase tracking-wide text-zinc-500">Account</div>
+            <div className="text-base font-semibold">{profile?.account ?? 'Set up your account'}</div>
+          </div>
+          <span className="ml-auto text-xs font-medium text-zinc-600">{profile ? 'Edit profile photo →' : 'Create profile photo →'}</span>
+        </button>
+
         <div className="mb-6 flex flex-wrap items-end gap-4">
           <div>
             <h1 className="text-2xl font-semibold tracking-tight">People</h1>
