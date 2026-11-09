@@ -56,9 +56,11 @@ src/store.ts            zustand store: all mutations (updateEl, setImage, setSli
 src/App.tsx             top bar, layout, autosave (IndexedDB), export flow, hidden export stage
 src/components/Stage.tsx            renders the strip; element rendering per type
 src/components/StripEditor.tsx      drag / resize / snapping, keyboard shortcuts, seam + safe-zone guides
+src/components/Library.tsx          people overview (start screen): open / new / import / delete
 src/components/Inspector.tsx        left panel: add elements, post settings, per-element controls
 src/components/InstagramPreview.tsx feed mock with swipe, dots, caption + account fields
 src/lib/export.ts       renderSlices(): strip → PNG blobs
+src/lib/library.ts      people library: list/read/write/delete posts; Electron → people/*.json via IPC, browser → IndexedDB
 src/lib/files.ts        save/open/export through window.studio, with browser download fallbacks; readImage() downscales to 2400px
 ```
 
@@ -74,7 +76,7 @@ src/lib/files.ts        save/open/export through window.studio, with browser dow
 
 - Background images must come **first** in `elements` or they cover lines/shapes that cross into that slide (this bit the timeline once). `addPhotoBackground()` prepends for this reason.
 - Selection chrome sizes are divided by the editor scale (`px = 1/scale` in `Stage`) so they stay a constant on-screen size.
-- Autosave writes the whole post to IndexedDB on every change (debounced 500 ms). Fine now; may need rethinking with very large posts.
+- Autosave writes the whole post into the library on every change (debounced 500 ms, plus a flush on "← All people"). Files live in `people/<post id>.json` in the project folder during development (git-ignored — real classmates' photos) and in the app's user-data folder when packaged. Deleting moves the file to the Trash. **Person template:** "Save as template" writes `person-template.json` beside `people/` (photos, name, consent, status stripped by `templateFrom()`); "New person" starts from it, else `createDefaultPost()`. The old single-post IndexedDB autosave (`then-now:current`) is migrated into the library on launch.
 - `setSlideCount()` drops elements whose `x` starts beyond the new strip width — no undo exists yet, so this is destructive.
 - Empty photo slots show "Drop the photo here" only in the editor (`interactive`); in the preview and export they are plain grey.
 
@@ -83,6 +85,6 @@ src/lib/files.ts        save/open/export through window.studio, with browser dow
 1. **Undo/redo** — most needed. `zundo` temporal middleware on the zustand store is the cheap route; throttle history during drags.
 2. **Git init + first commit** (Lasse prefers his GitHub noreply email on public commits).
 3. Verify the Electron-only paths listed above, then `npm run dist`.
-4. **Post library** — one folder per post (JSON + original images) instead of embedded data URLs; list with status + consent.
+4. **Post library follow-up** — overview exists; images are still embedded data URLs in each JSON (listing decodes them for thumbnails). Move to one folder per post with image files if the library gets slow.
 5. Saved themes (fonts, palettes, default overlay), profile-grid preview (3 columns), caption helpers/hashtags.
 6. Later: Reels/video export of the same story; optional publishing via the Instagram Graph API (requires Business/Creator account linked to a Facebook Page, and 4:5 posts).

@@ -1,10 +1,23 @@
-import type { Post } from '../types'
+import type { Post, PostSummary } from '../types'
 
 interface StudioBridge {
   isElectron: true
   exportSlices: (files: { name: string; data: ArrayBuffer }[], suggested: string) => Promise<string | null>
   saveProject: (json: string, suggested: string) => Promise<string | null>
   openProject: () => Promise<string | null>
+  libraryList: () => Promise<PostSummary[]>
+  libraryRead: (id: string) => Promise<string>
+  libraryWrite: (id: string, json: string) => Promise<void>
+  libraryDelete: (id: string) => Promise<void>
+  templateRead: () => Promise<string | null>
+  templateWrite: (json: string) => Promise<void>
+  templateDelete: () => Promise<void>
+}
+
+export function parsePost(json: string): Post {
+  const post = JSON.parse(json) as Post
+  if (post.version !== 1 || !Array.isArray(post.elements)) throw new Error('Not a carousel post file')
+  return post
 }
 
 declare global {
@@ -79,10 +92,7 @@ export async function openProject(): Promise<Post | null> {
     const f = await pickFile('.json,application/json')
     json = f ? await f.text() : null
   }
-  if (!json) return null
-  const post = JSON.parse(json) as Post
-  if (post.version !== 1 || !Array.isArray(post.elements)) throw new Error('Not a carousel post file')
-  return post
+  return json ? parsePost(json) : null
 }
 
 export async function saveSlices(blobs: Blob[], post: Post) {

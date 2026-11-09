@@ -160,25 +160,41 @@ function ElementContent({ el, interactive }: { el: El; interactive?: boolean }) 
           )}
         </div>
       )
-    case 'text':
-      return (
-        <div
-          style={{
-            position: 'absolute',
-            inset: 0,
-            fontFamily: FONTS[el.font],
-            fontSize: el.fontSize,
-            fontWeight: el.weight,
-            color: el.color,
-            textAlign: el.align,
-            lineHeight: el.lineHeight,
-            whiteSpace: 'pre-wrap',
-            letterSpacing: el.font === 'mono' ? '0.08em' : '-0.01em',
-          }}
-        >
-          {el.content}
-        </div>
-      )
+    case 'text': {
+      const font = {
+        fontFamily: FONTS[el.font],
+        fontSize: el.fontSize,
+        fontWeight: el.weight,
+        color: el.color,
+        textAlign: el.align,
+        lineHeight: el.lineHeight,
+        whiteSpace: 'pre-wrap',
+        letterSpacing: el.font === 'mono' ? '0.08em' : '-0.01em',
+      } as const
+      if (el.bubble) {
+        // Bubble hugs its text inside the element box; the corner nearest the speaker stays sharp like a chat tail.
+        const r = el.fontSize
+        const tail = el.fontSize * 0.2
+        const left = el.bubble.side === 'left'
+        return (
+          <div style={{ position: 'absolute', inset: 0, display: 'flex', alignItems: 'flex-start', justifyContent: left ? 'flex-start' : 'flex-end' }}>
+            <div
+              style={{
+                ...font,
+                maxWidth: '100%',
+                background: el.bubble.color,
+                padding: `${el.fontSize * 0.55}px ${el.fontSize * 0.8}px`,
+                borderRadius: left ? `${r}px ${r}px ${r}px ${tail}px` : `${r}px ${r}px ${tail}px ${r}px`,
+                boxShadow: '0 6px 18px rgba(0,0,0,0.08)',
+              }}
+            >
+              {el.content}
+            </div>
+          </div>
+        )
+      }
+      return <div style={{ position: 'absolute', inset: 0, ...font }}>{el.content}</div>
+    }
     case 'rect':
       return <div style={{ position: 'absolute', inset: 0, background: el.color, borderRadius: el.radius }} />
   }

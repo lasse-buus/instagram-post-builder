@@ -1,8 +1,8 @@
 import type { ReactNode } from 'react'
 import { pickFile, readImage } from '../lib/files'
 import { useStore } from '../store'
-import { circle, newElement } from '../template'
-import { type Crop, type El, type ElType, PALETTE, SLIDE_W, type Tint, type TintMode } from '../types'
+import { chatBubble, circle, newElement } from '../template'
+import { type Crop, type El, type ElType, PALETTE, SLIDE_W, type Tint, type TintMode, slideHeight } from '../types'
 
 const inputCls = 'w-full rounded-md border border-zinc-300 bg-white px-2 py-1 text-sm outline-none focus:border-zinc-500'
 
@@ -58,6 +58,8 @@ export function Inspector() {
           <button className={btn} onClick={() => add('text')}>Text</button>
           <button className={btn} onClick={() => add('image')}>Image</button>
           <button className={btn} onClick={() => add('rect')}>Line</button>
+          <button className={btn} onClick={() => addEl(chatBubble(targetSlide, slideHeight(post.aspect) / 2 - 65, 'left', 'Question?'))}>Chat question</button>
+          <button className={btn} onClick={() => addEl(chatBubble(targetSlide, slideHeight(post.aspect) / 2 - 65, 'right', 'Answer'))}>Chat answer</button>
           <button className={`${btn} col-span-2`} onClick={() => addEl(circle(targetSlide, post.aspect, '#ffffff'))}>Circle (behind a photo)</button>
         </div>
       </Section>
@@ -278,6 +280,25 @@ function ElementInspector({ el }: { el: El }) {
                 <input type="color" className="h-8 w-full" value={el.color} onChange={(e) => set({ color: e.target.value })} />
               </Field>
             </div>
+            <Field label="Chat bubble">
+              <select
+                className={inputCls}
+                value={el.bubble?.side ?? 'none'}
+                onChange={(e) => {
+                  const side = e.target.value
+                  set({ bubble: side === 'none' ? undefined : { side: side as 'left' | 'right', color: el.bubble?.color ?? (side === 'left' ? '#ffffff' : '#2E86DE') } })
+                }}
+              >
+                <option value="none">None</option>
+                <option value="left">Left · question</option>
+                <option value="right">Right · answer</option>
+              </select>
+            </Field>
+            {el.bubble && (
+              <Field label="Bubble colour">
+                <Swatches value={el.bubble.color} onPick={(color) => set({ bubble: { ...el.bubble!, color } })} />
+              </Field>
+            )}
           </>
         )}
 

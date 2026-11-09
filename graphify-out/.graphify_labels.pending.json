@@ -1,17 +1,12 @@
 {
-  "0": "types.ts",
-  "1": "App.tsx",
+  "0": "template.ts",
   "2": "compilerOptions",
   "3": "Inspector.tsx",
-  "4": "devDependencies",
-  "5": "dependencies",
+  "4": "package.json",
   "6": "Handoff — Then & Now Studio",
-  "7": "vite.config.ts",
-  "8": "package.json",
   "9": "build",
   "10": "Then & Now Studio",
   "11": "main.ts",
-  "12": "scripts",
-  "13": "electron",
-  "14": "@types/react-dom@^19.1.5"
+  "13": "types.ts",
+  "14": "App.tsx"
 }

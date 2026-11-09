@@ -36,6 +36,13 @@ export interface TextEl extends Base {
   align: 'left' | 'center' | 'right'
   font: 'sans' | 'serif' | 'mono'
   lineHeight: number
+  /** Renders the text as a chat bubble hugging the left (question) or right (answer) edge of its box. */
+  bubble?: Bubble
+}
+
+export interface Bubble {
+  side: 'left' | 'right'
+  color: string
 }
 
 export interface ImageEl extends Base {
@@ -83,6 +90,33 @@ export interface Post {
   caption: string
   consent: { given: boolean; date?: string; note?: string }
   status: 'draft' | 'ready' | 'posted'
+  /** ISO time of the last library save. */
+  updatedAt?: string
+}
+
+/** What the people overview needs for one post — `then`/`now` are photo URLs (thumbnails when listed from disk). */
+export interface PostSummary {
+  id: string
+  person: string
+  status: Post['status']
+  consent: boolean
+  updatedAt?: string
+  then?: string
+  now?: string
+}
+
+/** The leftmost polaroid is "then", the rightmost is "now". */
+export function summarize(p: Post): PostSummary {
+  const pols = p.elements.filter((e): e is PolaroidEl => e.type === 'polaroid').sort((a, b) => a.x - b.x)
+  return {
+    id: p.id,
+    person: p.person,
+    status: p.status,
+    consent: p.consent.given,
+    updatedAt: p.updatedAt,
+    then: pols[0]?.image,
+    now: pols.length > 1 ? pols[pols.length - 1].image : undefined,
+  }
 }
 
 /** Polaroid frame geometry derived from its width — keeps the classic proportions. */

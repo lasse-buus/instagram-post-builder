@@ -42,14 +42,18 @@ export function createDefaultPost(aspect: Aspect = '3:4'): Post {
     { id: uid(), type: 'rect', x: SLIDE_W / 2 - 14, y: H - 131, w: 28, h: 28, rotation: 0, color: '#18181b', radius: 14 },
     { id: uid(), type: 'rect', x: lastX + SLIDE_W / 2 - 14, y: H - 131, w: 28, h: 28, rotation: 0, color: '#18181b', radius: 14 },
 
-    // Slide 2 — who they were
+    // Slide 2 — who they were, as a chat
     text({ x: SLIDE_W + 110, y: 220, w: 860, content: 'Name Surname', fontSize: 96, weight: 700, lineHeight: 1.05 }),
     text({ x: SLIDE_W + 110, y: 380, w: 860, h: 120, content: 'CLASS OF 2007', fontSize: 34, weight: 600, color: '#71717a', font: 'mono' }),
-    text({ x: SLIDE_W + 110, y: 500, w: 860, h: 600, content: 'Who were they back then? Write a few lines about how classmates remember them — the hobbies, the jokes, the dream job.', fontSize: 50, weight: 400, lineHeight: 1.3 }),
+    chatBubble(1, 520, 'left', 'Who was I?'),
+    chatBubble(1, 680, 'right', 'Back in 2007 I was… the hobbies, the jokes, the dream job.', 380),
 
-    // Slide 3 — what happened next
-    text({ x: SLIDE_W * 2 + 110, y: 220, w: 860, content: '20 years later', fontSize: 96, weight: 700, lineHeight: 1.05 }),
-    text({ x: SLIDE_W * 2 + 110, y: 420, w: 860, h: 700, content: 'What are they doing today? Where do they live, what do they work with, and what would they tell their 2007 self?', fontSize: 50, weight: 400, lineHeight: 1.3 }),
+    // Slide 3 — what happened next, as a chat
+    text({ x: SLIDE_W * 2 + 110, y: 180, w: 860, h: 120, content: '20 years later', fontSize: 96, weight: 700, lineHeight: 1.05 }),
+    chatBubble(2, 340, 'left', 'Who am I now?'),
+    chatBubble(2, 480, 'right', 'Today I live in… and work with…', 260),
+    chatBubble(2, 780, 'left', 'Who do I have contact with?'),
+    chatBubble(2, 920, 'right', 'I still keep in touch with…', 240),
 
     // Slide 4 — now
     { id: nowId, type: 'polaroid', x: lastX + (SLIDE_W - pw) / 2, y: py, w: pw, h: ph, rotation: 0, crop: { x: 50, y: 35, zoom: 1 }, year: '2027', subtitle: 'Now' },
@@ -70,6 +74,25 @@ export function createDefaultPost(aspect: Aspect = '3:4'): Post {
     status: 'draft',
   }
 }
+
+/**
+ * A post reduced to its reusable layout: no photos, name, consent or status.
+ * Photos are stripped from every image too, so a template never carries a real person's pictures.
+ */
+export function templateFrom(post: Post): Post {
+  return {
+    ...post,
+    id: 'template',
+    person: 'New person',
+    consent: { given: false },
+    status: 'draft',
+    updatedAt: undefined,
+    elements: post.elements.map((e) => (e.type === 'polaroid' || e.type === 'image' ? { ...e, image: undefined } : e)),
+  }
+}
+
+/** A fresh post for a new person, laid out like the template. */
+export const postFromTemplate = (template: Post): Post => ({ ...template, id: uid() })
 
 export function newElement(type: El['type'], slide: number, aspect: Aspect): El {
   const H = slideHeight(aspect)
@@ -97,6 +120,23 @@ export function backgroundFromPolaroid(p: { id: string; x: number; w: number; im
     crop: { x: 50, y: 40, zoom: 1.15 }, blur: 0, opacity: 1, image: p.image, linkedTo: p.id,
     tint: { color, strength: 0.85, mode: 'multiply', grayscale: true },
   }
+}
+
+/** Chat bubble: 'left' = question (white), 'right' = answer (blue). Box is 760 wide, hugging that side of the slide. */
+export function chatBubble(slide: number, y: number, side: 'left' | 'right', content: string, h = 130): El {
+  const left = side === 'left'
+  return text({
+    x: slide * SLIDE_W + (left ? 110 : 210),
+    y,
+    w: 760,
+    h,
+    content,
+    fontSize: 44,
+    weight: left ? 600 : 400,
+    lineHeight: 1.3,
+    color: left ? '#18181b' : '#ffffff',
+    bubble: { side, color: left ? '#ffffff' : '#2E86DE' },
+  })
 }
 
 export function circle(slide: number, aspect: Aspect, color: string): El {

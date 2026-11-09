@@ -4,3 +4,6 @@ dist-electron
 release
 .DS_Store
 *.log
+people
+graphify-out/cache/hook_sessions/
+graphify-out/cache/last_query_stamp
